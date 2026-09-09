@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>深淵試煉</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: 復古像素與哥德暗黑風格字體 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=DotGothic16&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      background-color: #030305;
+      background-image: radial-gradient(circle at 50% 30%, #1a060b 0%, #030305 85%);
+      font-family: 'DotGothic16', 'Cinzel', -apple-system, monospace;
+    }
+    .retro-font {
+      font-family: 'Press Start 2P', monospace;
+    }
+    .cinzel-font {
+      font-family: 'Cinzel', serif;
+    }
+    /* CRT 掃描線光柵濾鏡效果 */
+    .crt-overlay::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.45) 50%);
+      background-size: 100% 4px;
+      z-index: 10;
+      pointer-events: none;
+      opacity: 0.65;
+    }
+    /* 復古紅黑陰影邊界 */
+    .gothic-border {
+      border: 2px solid #57111a;
+      box-shadow: 0 0 15px rgba(185, 28, 28, 0.35), inset 0 0 10px rgba(0, 0, 0, 0.9);
+    }
+    .touch-btn:active {
+      transform: scale(0.95);
+      background-color: #7f1d1d !important;
+      border-color: #ef4444 !important;
+    }
+    /* 血色呼吸文字 */
+    .glow-blood {
+      text-shadow: 0 0 8px #dc2626, 0 0 18px #7f1d1d;
+    }
+    .glow-gold {
+      text-shadow: 0 0 10px #f59e0b, 0 0 20px #b45309;
+    }
+    /* 縮放容器轉換平滑過渡 */
+    #game-scaler {
+      transform-origin: top center;
+      transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-start min-h-screen text-stone-200 p-2 sm:p-4 overflow-x-hidden">
+
+  <!-- 右上角電腦版縮放與全螢幕浮動控制列 -->
+  <aside id="zoom-toolbar" aria-label="畫面縮放控制" class="fixed top-2 right-2 sm:top-3 sm:right-4 z-50 flex items-center gap-1 sm:gap-1.5 bg-stone-950/90 border border-red-950/80 px-2 py-1 rounded shadow-lg backdrop-blur text-[10px] retro-font text-stone-300 select-none">
+    <span class="text-stone-500 mr-1 hidden md:inline">ZOOM:</span>
+    <button id="zoom-out-btn" title="縮小 (快捷鍵 -)" class="w-6 h-6 flex items-center justify-center bg-stone-900 border border-stone-800 hover:border-red-600 hover:text-red-400 active:scale-95 transition-all">
+      -
+    </button>
+    <span id="zoom-level-text" class="w-12 text-center text-red-400 font-bold tracking-tight">100%</span>
+    <button id="zoom-in-btn" title="放大 (快捷鍵 +)" class="w-6 h-6 flex items-center justify-center bg-stone-900 border border-stone-800 hover:border-red-600 hover:text-red-400 active:scale-95 transition-all">
+      +
+    </button>
+    <button id="zoom-reset-btn" title="重設尺寸 (快捷鍵 0)" class="px-1.5 h-6 flex items-center justify-center bg-stone-900 border border-stone-800 hover:border-red-600 hover:text-stone-100 text-[9px] active:scale-95 transition-all">
+      1:1
+    </button>
+    <button id="fullscreen-btn" title="切換全螢幕" class="w-6 h-6 flex items-center justify-center bg-stone-900 border border-stone-800 hover:border-red-600 hover:text-amber-400 active:scale-95 transition-all ml-0.5">
+      ⛶
+    </button>
+  </aside>
+
+  <!-- 縮放外層包裝容器 -->
+  <div id="game-scaler" class="flex flex-col items-center w-full max-w-[500px]">
+
+  <header class="text-center mb-2 sm:mb-3">
+    <div class="inline-flex items-center gap-1.5 px-3 py-0.5 bg-red-950/60 border border-red-800/60 text-[10px] sm:text-xs font-bold text-red-400 mb-1 tracking-widest uppercase">
+      [ ABYSS RITUAL ]
+    </div>
+    <h1 class="text-xl sm:text-2xl font-black tracking-widest cinzel-font text-red-500 glow-blood">
+      深淵試煉
+    </h1>
+    <p class="text-[10px] text-stone-500 tracking-wider">DEVIL CAT : DESCENT</p>
+  </header>
+
+  <!-- 遊戲主視窗外框 -->
+  <div class="relative flex flex-col items-center">
+    
+    <div class="w-full max-w-[420px] flex items-center justify-between px-3 py-1.5 bg-stone-950 border-t-2 border-x-2 border-red-900 text-xs">
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] retro-font text-red-500 tracking-tighter">SOUL:</span>
+        <div class="flex gap-1" id="heart-container"></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-[11px] retro-font text-stone-400 bg-stone-900/90 px-2 py-0.5 border border-stone-800 min-w-[110px] text-center">
+          DEPTH: <span id="depth-meter" class="text-red-400 font-bold">B1F</span>
+        </span>
+        <button id="sound-toggle" class="retro-font px-2 py-0.5 bg-stone-900 border border-red-950 hover:border-red-600 text-[9px] text-stone-300">
+          SFX: ON
+        </button>
+      </div>
+    </div>
+
+    <div class="relative crt-overlay">
+      <canvas id="gameCanvas" width="400" height="600" class="w-[340px] h-[510px] sm:w-[400px] sm:h-[600px] bg-black border-2 border-red-900 block"></canvas>
+
+      <!-- 頂部血骸尖刺天井 -->
+      <div class="absolute top-0 left-0 right-0 h-4 flex justify-between pointer-events-none overflow-hidden z-20">
+        <svg class="w-full h-4 text-red-800 drop-shadow-[0_2px_6px_rgba(220,38,38,0.9)]" viewBox="0 0 400 16" preserveAspectRatio="none">
+          <path d="M0,0 L10,16 L20,0 L30,16 L40,0 L50,16 L60,0 L70,16 L80,0 L90,16 L100,0 L110,16 L120,0 L130,16 L140,0 L150,16 L160,0 L170,16 L180,0 L190,16 L200,0 L210,16 L220,0 L230,16 L240,0 L250,16 L260,0 L270,16 L280,0 L290,16 L300,0 L310,16 L320,0 L330,16 L340,0 L350,16 L360,0 L370,16 L380,0 L390,16 L400,0 Z" fill="currentColor"></path>
+        </svg>
+      </div>
+
+      <div id="start-screen" class="absolute inset-0 bg-black/92 flex flex-col items-center justify-center p-6 text-center z-30 cursor-pointer gothic-border">
+        <!-- 復古像素邪眼印記 -->
+        <div class="w-16 h-16 mb-2 flex items-center justify-center">
+          <svg viewBox="0 0 64 64" class="w-14 h-14 text-red-600 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+            <polygon points="32,4 40,24 60,32 40,40 32,60 24,40 4,32 24,24" fill="none" stroke="currentColor" stroke-width="3"/>
+            <circle cx="32" cy="32" r="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
+            <circle cx="32" cy="32" r="2.5" fill="#fef08a"/>
+          </svg>
+        </div>
+        <h2 class="cinzel-font text-xl sm:text-2xl font-black text-red-500 tracking-wider mb-1 glow-blood">
+          深淵試煉
+        </h2>
+        <p class="text-[11px] text-stone-400 mb-3 max-w-[270px] leading-relaxed">
+          下潛越深，階梯上升越狂暴！踩普通石階回血，避開致命天頂與咒血尖刺。
+        </p>
+
+        <!-- 復古暗黑符號踏板解說 -->
+        <div class="grid grid-cols-2 gap-2 text-left text-[11px] bg-stone-950 border border-stone-800 p-2.5 mb-4 w-full max-w-[270px]">
+          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-stone-700 border border-stone-500 inline-block"></span> 冥石階 (回血+1)</div>
+          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-emerald-800 border border-emerald-500 inline-block"></span> 幽冥躍升 (回血+1)</div>
+          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-cyan-950 border border-cyan-500 inline-block"></span> 冥河浮帶 (回血+1)</div>
+          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-yellow-950 border border-yellow-600 inline-block"></span> 腐朽骨階 (回血碎裂)</div>
+          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-purple-950 border border-purple-500 inline-block"></span> 翻轉幽階 (回血旋轉)</div>
+          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-red-950 border border-red-600 inline-block"></span> 咒血尖刺 (踩中損血)</div>
+        </div>
+
+        <button id="start-btn" type="button" class="w-full max-w-[230px] py-3 bg-gradient-to-r from-red-900 to-red-950 hover:from-red-800 hover:to-red-900 border border-red-500 text-stone-100 font-bold retro-font text-[10px] tracking-widest active:scale-95 transition-transform cursor-pointer">
+          ENTER THE ABYSS
+        </button>
+      </div>
+
+      <div id="gameover-screen" class="hidden absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-6 text-center z-30 gothic-border">
+        <div class="w-14 h-14 mb-2 flex items-center justify-center" id="end-badge">
+          <svg viewBox="0 0 64 64" class="w-12 h-12 text-red-600">
+            <path d="M12,12 L52,52 M52,12 L12,52" stroke="currentColor" stroke-width="6" stroke-linecap="square"/>
+            <circle cx="32" cy="32" r="24" fill="none" stroke="#7f1d1d" stroke-width="3" stroke-dasharray="6,4"/>
+          </svg>
+        </div>
+        <h3 id="gameover-subtitle" class="retro-font text-[10px] tracking-widest text-red-600 mb-1">CONTRACT BROKEN</h3>
+        <h2 id="gameover-title" class="cinzel-font text-2xl font-black text-stone-100 mb-2 glow-blood">SOUL EXTINCT</h2>
+        
+        <div class="bg-stone-950 border border-red-900 p-4 my-3 w-full max-w-[260px]">
+          <div class="text-[10px] retro-font text-stone-500">REACHED DEPTH</div>
+          <div id="final-depth" class="retro-font text-2xl font-bold text-red-500 mt-1">B0F</div>
+          <div id="snarky-comment" class="text-[11px] text-stone-400 mt-2 font-mono italic">
+            「靈魂歸於死寂，虛無將吞噬這具形骸。」
+          </div>
+        </div>
+
+        <button id="restart-btn" type="button" class="w-full max-w-[210px] py-2.5 mt-2 bg-stone-900 hover:bg-stone-800 border border-red-700 text-red-300 retro-font text-[10px] tracking-wider active:scale-95 transition-all cursor-pointer">
+          RESURRECT
+        </button>
+      </div>
+    </div>
+
+    <div class="w-full max-w-[420px] grid grid-cols-2 gap-3 mt-3 px-2 sm:hidden">
+      <button id="touch-left" type="button" class="touch-btn h-14 bg-stone-950 border border-red-900/80 rounded-none flex items-center justify-center text-red-400 font-bold retro-font text-xs tracking-wider">
+        ◄ LEFT
+      </button>
+      <button id="touch-right" type="button" class="touch-btn h-14 bg-stone-950 border border-red-900/80 rounded-none flex items-center justify-center text-red-400 font-bold retro-font text-xs tracking-wider">
+        RIGHT ►
+      </button>
+    </div>
+
+    <!-- 電腦版鍵盤提示 -->
+    <div class="hidden sm:flex flex-col items-center gap-1 text-[10px] retro-font text-stone-500 mt-3">
+      <span>MOVE: [A]/[D] OR [LEFT]/[RIGHT] ARROW KEYS</span>
+      <span class="text-[9px] text-stone-600">ZOOM: [+] [-] [0] 鍵可自由縮放畫面</span>
+    </div>
+  </div>
+  </div> <!-- 結束 game-scaler -->
+
+  <script>
+    class DarkSynth {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        try {
+          if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) this.ctx = new AudioContext();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        } catch (e) {}
+      }
+
+      // 踩普通石階落地音
+      playThud() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(380, now);
+          osc.frequency.exponentialRampToValueAtTime(95, now + 0.055);
+
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } catch (e) {}
+      }
+
+      // 回血音
+      playHeal() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25].forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            const t = now + i * 0.045;
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.16, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.1);
+          });
+        } catch (e) {}
+      }
+
+      // 彈簧階梯
+      playSpring() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          const mod = this.ctx.createOscillator();
+          const modGain = this.ctx.createGain();
+
+          mod.type = 'sine';
+          mod.frequency.setValueAtTime(35, now);
+          modGain.gain.setValueAtTime(80, now);
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(260, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.22);
+
+          mod.connect(modGain);
+          modGain.connect(osc.frequency);
+
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          mod.start(now);
+          osc.start(now);
+          mod.stop(now + 0.23);
+          osc.stop(now + 0.23);
+        } catch (e) {}
+      }
+
+      // 扎刺聲
+      playHurt() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.13);
+        } catch (e) {}
+      }
+
+      // 踏碎骨板聲
+      playBreak() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const bufferSize = this.ctx.sampleRate * 0.08;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(800, now);
+          filter.frequency.linearRampToValueAtTime(180, now + 0.08);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          noise.start(now);
+        } catch (e) {}
+      }
+
+      // 翻轉板旋轉聲
+      playFlip() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(280, now);
+          osc.frequency.exponentialRampToValueAtTime(75, now + 0.16);
+
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.17);
+        } catch (e) {}
+      }
+
+      // 遊戲結束音效
+      playGameOver() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const dropOsc = this.ctx.createOscillator();
+          const dropGain = this.ctx.createGain();
+
+          dropOsc.type = 'sawtooth';
+          dropOsc.frequency.setValueAtTime(600, now);
+          dropOsc.frequency.exponentialRampToValueAtTime(60, now + 0.55);
+
+          dropGain.gain.setValueAtTime(0.28, now);
+          dropGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+          dropOsc.connect(dropGain);
+          dropGain.connect(this.ctx.destination);
+
+          dropOsc.start(now);
+          dropOsc.stop(now + 0.56);
+
+          const endOsc = this.ctx.createOscillator();
+          const endGain = this.ctx.createGain();
+          endOsc.type = 'triangle';
+          endOsc.frequency.setValueAtTime(110, now + 0.4);
+          endOsc.frequency.exponentialRampToValueAtTime(45, now + 0.85);
+
+          endGain.gain.setValueAtTime(0.001, now);
+          endGain.gain.setValueAtTime(0.3, now + 0.4);
+          endGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+
+          endOsc.connect(endGain);
+          endGain.connect(this.ctx.destination);
+
+          endOsc.start(now + 0.4);
+          endOsc.stop(now + 0.86);
+        } catch (e) {}
+      }
+
+      // 9999 層通關史詩音效
+      playVictory() {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const chords = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+          chords.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            const t = now + idx * 0.12;
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.62);
+          });
+        } catch (e) {}
+      }
+    }
+
+    const sound = new DarkSynth();
+
+    const CANVAS_WIDTH = 400;
+    const CANVAS_HEIGHT = 600;
+    const MAX_HP = 5;
+    const MAX_DEPTH = 9999;
+    const GRAVITY = 0.32;
+    const CAT_WIDTH = 34;
+    const CAT_HEIGHT = 30;
+
+    const PLATFORM_TYPES = {
+      NORMAL: 'normal',
+      SPRING: 'spring',
+      BELT_LEFT: 'belt_left',
+      BELT_RIGHT: 'belt_right',
+      SPIKE: 'spike',
+      CRUMBLE: 'crumble',
+      FLIP: 'flip'
+    };
+
+    const DARK_REMARKS = [
+      "「九命已折其一，深淵無言嗤笑著汝之脆弱。」",
+      "「地心之火正在吞沒最後的黑夜靈魂。」",
+      "「萬物皆墜，即使是冥界黑使亦無法抵抗輪迴。」",
+      "「鮮血浸透了這座石階，汝之殘軀已化作養分。」",
+      "「恐懼支配了腳步，深淵依然深不見底。」",
+      "「這具形骸已亡，重新立下血誓再戰吧。」"
+    ];
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('start-screen');
+    const gameoverScreen = document.getElementById('gameover-screen');
+    const gameoverTitle = document.getElementById('gameover-title');
+    const gameoverSubtitle = document.getElementById('gameover-subtitle');
+    const endBadge = document.getElementById('end-badge');
+    const startBtn = document.getElementById('start-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const depthMeter = document.getElementById('depth-meter');
+    const finalDepth = document.getElementById('final-depth');
+    const snarkyComment = document.getElementById('snarky-comment');
+    const heartContainer = document.getElementById('heart-container');
+    const soundToggle = document.getElementById('sound-toggle');
+    const touchLeft = document.getElementById('touch-left');
+    const touchRight = document.getElementById('touch-right');
+
+    let gameState = 'START';
+    let depth = 0;
+    let baseScrollSpeed = 1.6; // 起始節奏微調偏快（由 1.35 提速至 1.6）
+    let currentScrollSpeed = 1.6;
+    let hp = MAX_HP;
+    let invulnerableTimer = 0;
+    let ceilingHurtCooldown = 0;
+    let animFrameId = null;
+
+    const keys = { left: false, right: false };
+
+    const cat = {
+      x: 180,
+      y: 100,
+      vx: 0,
+      vy: 0,
+      width: CAT_WIDTH,
+      height: CAT_HEIGHT,
+      speed: 4.6,
+      onGround: false,
+      currentPlatform: null,
+      facing: 'right',
+      walkTimer: 0,
+      hurt: false,
+      reset() {
+        this.x = CANVAS_WIDTH / 2 - CAT_WIDTH / 2;
+        this.y = 80;
+        this.vx = 0;
+        this.vy = 0;
+        this.onGround = false;
+        this.currentPlatform = null;
+        this.facing = 'right';
+        this.walkTimer = 0;
+        this.hurt = false;
+      }
+    };
+
+    let platforms = [];
+
+    function updateHeartsUI() {
+      heartContainer.innerHTML = '';
+      for (let i = 0; i < MAX_HP; i++) {
+        const soul = document.createElement('div');
+        soul.className = `w-3 h-3 border transition-all duration-300 ${
+          i < hp ? 'bg-red-600 border-red-400 shadow-[0_0_6px_#dc2626]' : 'bg-stone-900 border-stone-800 opacity-25'
+        }`;
+        soul.style.transform = 'rotate(45deg)';
+        heartContainer.appendChild(soul);
+      }
+    }
+
+    function healPlayer() {
+      if (hp < MAX_HP) {
+        hp++;
+        sound.playHeal();
+        updateHeartsUI();
+      }
+    }
+
+    // 細緻分層速度計算：起始稍微偏快，分階段平滑且有感加速
+    function calculateScrollSpeed(d) {
+      const p = Math.min(d, MAX_DEPTH);
+      let speed = baseScrollSpeed; // 基礎速度 1.6
+
+      if (p <= 20) {
+        // 第一階：B1 ~ B20 (1.6 -> 1.85) - 熱身節奏
+        speed += (p / 20) * 0.25;
+      } else if (p <= 60) {
+        // 第二階：B21 ~ B60 (1.85 -> 2.25) - 開始進入緊張感
+        speed += 0.25 + ((p - 20) / 40) * 0.4;
+      } else if (p <= 120) {
+        // 第三階：B61 ~ B120 (2.25 -> 2.7) - 俐落敏捷期
+        speed += 0.65 + ((p - 60) / 60) * 0.45;
+      } else if (p <= 250) {
+        // 第四階：B121 ~ B250 (2.7 -> 3.2) - 考驗反應
+        speed += 1.1 + ((p - 120) / 130) * 0.5;
+      } else if (p <= 500) {
+        // 第五階：B251 ~ B500 (3.2 -> 3.75) - 高速壓迫
+        speed += 1.6 + ((p - 250) / 250) * 0.55;
+      } else if (p <= 1000) {
+        // 第六階：B501 ~ B1000 (3.75 -> 4.3) - 疾走地獄
+        speed += 2.15 + ((p - 500) / 500) * 0.55;
+      } else if (p <= 3000) {
+        // 第七階：B1001 ~ B3000 (4.3 -> 4.9) - 狂暴深淵
+        speed += 2.7 + ((p - 1000) / 2000) * 0.6;
+      } else {
+        // 第八階：B3001 ~ B9999 (4.9 -> 5.5) - 極致神速領域
+        speed += 3.3 + ((p - 3000) / 6999) * 0.6;
+      }
+
+      return Math.min(5.5, speed);
+    }
+
+    // 隨深度調整踏板生成類型機率（直到 9999 層）
+    function getWeightedRandomType(depthLevel) {
+      const r = Math.random();
+
+      if (depthLevel <= 15) {
+        if (r < 0.18) return PLATFORM_TYPES.SPIKE;
+        if (r < 0.48) return PLATFORM_TYPES.NORMAL;
+        if (r < 0.68) return PLATFORM_TYPES.SPRING;
+        if (r < 0.80) return PLATFORM_TYPES.CRUMBLE;
+        if (r < 0.90) return PLATFORM_TYPES.FLIP;
+        return (r < 0.95) ? PLATFORM_TYPES.BELT_LEFT : PLATFORM_TYPES.BELT_RIGHT;
+      } else if (depthLevel <= 50) {
+        if (r < 0.28) return PLATFORM_TYPES.SPIKE;
+        if (r < 0.52) return PLATFORM_TYPES.NORMAL;
+        if (r < 0.66) return PLATFORM_TYPES.SPRING;
+        if (r < 0.77) return PLATFORM_TYPES.CRUMBLE;
+        if (r < 0.88) return PLATFORM_TYPES.FLIP;
+        return (r < 0.94) ? PLATFORM_TYPES.BELT_LEFT : PLATFORM_TYPES.BELT_RIGHT;
+      } else if (depthLevel <= 300) {
+        if (r < 0.38) return PLATFORM_TYPES.SPIKE;
+        if (r < 0.56) return PLATFORM_TYPES.NORMAL;
+        if (r < 0.68) return PLATFORM_TYPES.SPRING;
+        if (r < 0.79) return PLATFORM_TYPES.CRUMBLE;
+        if (r < 0.89) return PLATFORM_TYPES.FLIP;
+        return (r < 0.95) ? PLATFORM_TYPES.BELT_LEFT : PLATFORM_TYPES.BELT_RIGHT;
+      } else if (depthLevel <= 1000) {
+        if (r < 0.46) return PLATFORM_TYPES.SPIKE;
+        if (r < 0.62) return PLATFORM_TYPES.NORMAL;
+        if (r < 0.72) return PLATFORM_TYPES.SPRING;
+        if (r < 0.82) return PLATFORM_TYPES.CRUMBLE;
+        if (r < 0.91) return PLATFORM_TYPES.FLIP;
+        return (r < 0.96) ? PLATFORM_TYPES.BELT_LEFT : PLATFORM_TYPES.BELT_RIGHT;
+      } else {
+        if (r < 0.50) return PLATFORM_TYPES.SPIKE;
+        if (r < 0.63) return PLATFORM_TYPES.NORMAL;
+        if (r < 0.73) return PLATFORM_TYPES.SPRING;
+        if (r < 0.83) return PLATFORM_TYPES.CRUMBLE;
+        if (r < 0.92) return PLATFORM_TYPES.FLIP;
+        return (r < 0.96) ? PLATFORM_TYPES.BELT_LEFT : PLATFORM_TYPES.BELT_RIGHT;
+      }
+    }
+
+    function createPlatform(y, forcedType = null) {
+      const type = forcedType || getWeightedRandomType(depth);
+      const width = Math.max(68, 105 - Math.min(26, depth * 0.05));
+      const x = Math.random() * (CANVAS_WIDTH - width - 20) + 10;
+      return {
+        x,
+        y,
+        width,
+        height: 14,
+        type,
+        stepped: false,
+        healed: false,
+        crumbleTimer: 0,
+        isBroken: false,
+        springOffset: 0,
+        beltOffset: 0,
+        flipAngle: 0,
+        isFlipping: false
+      };
+    }
+
+    function initPlatforms() {
+      platforms = [];
+      platforms.push({
+        x: CANVAS_WIDTH / 2 - 55,
+        y: 160,
+        width: 110,
+        height: 14,
+        type: PLATFORM_TYPES.NORMAL,
+        stepped: false,
+        healed: true,
+        crumbleTimer: 0,
+        isBroken: false,
+        springOffset: 0,
+        beltOffset: 0,
+        flipAngle: 0,
+        isFlipping: false
+      });
+
+      let currentY = 240;
+      while (currentY < CANVAS_HEIGHT + 50) {
+        platforms.push(createPlatform(currentY));
+        currentY += 80 + Math.random() * 20;
+      }
+    }
+
+    function drawCat(c) {
+      ctx.save();
+      ctx.translate(c.x + c.width / 2, c.y + c.height / 2);
+
+      if (invulnerableTimer > 0 && Math.floor(invulnerableTimer / 4) % 2 === 0) {
+        ctx.globalAlpha = 0.35;
+      }
+
+      if (c.facing === 'left') {
+        ctx.scale(-1, 1);
+      }
+
+      const isWalking = c.onGround && Math.abs(c.vx) > 0.1;
+      const legBob = isWalking ? Math.sin(c.walkTimer * 0.3) * 2 : 0;
+
+      // 復古惡魔蝠翼
+      ctx.fillStyle = '#2b0a12';
+      ctx.strokeStyle = '#57111a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const wingFlap = Math.sin(Date.now() * 0.008) * 3;
+      ctx.moveTo(-6, -6 + legBob);
+      ctx.lineTo(-20, -18 + wingFlap);
+      ctx.lineTo(-14, -6 + wingFlap);
+      ctx.lineTo(-22, -2 + wingFlap);
+      ctx.lineTo(-6, 2 + legBob);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 邪性細長黑尾
+      ctx.strokeStyle = '#0a0a0c';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'square';
+      ctx.beginPath();
+      const tailWiggle = Math.sin(Date.now() * 0.007) * 7;
+      ctx.moveTo(-12, 4);
+      ctx.quadraticCurveTo(-22, -4 + tailWiggle, -20, -16 + tailWiggle);
+      ctx.stroke();
+
+      // 尾尖惡魔刺
+      ctx.fillStyle = '#7f1d1d';
+      ctx.beginPath();
+      ctx.moveTo(-20, -16 + tailWiggle);
+      ctx.lineTo(-24, -13 + tailWiggle);
+      ctx.lineTo(-19, -21 + tailWiggle);
+      ctx.closePath();
+      ctx.fill();
+
+      // 黑色軀幹
+      ctx.fillStyle = '#0a0a0d';
+      ctx.strokeStyle = '#3f1118';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(-14, -8 + legBob, 28, 20);
+      ctx.strokeRect(-14, -8 + legBob, 28, 20);
+
+      // 胸口暗紅逆十字血印
+      ctx.fillStyle = '#991b1b';
+      ctx.fillRect(-2, -4 + legBob, 4, 12);
+      ctx.fillRect(-5, 2 + legBob, 10, 3);
+
+      // 尖銳惡魔耳
+      ctx.fillStyle = '#050507';
+      ctx.beginPath();
+      ctx.moveTo(-12, -8 + legBob); ctx.lineTo(-8, -20 + legBob); ctx.lineTo(-2, -8 + legBob);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(2, -8 + legBob); ctx.lineTo(8, -20 + legBob); ctx.lineTo(12, -8 + legBob);
+      ctx.fill();
+
+      // 鮮紅耳內刺光
+      ctx.fillStyle = '#7f1d1d';
+      ctx.beginPath();
+      ctx.moveTo(-10, -8 + legBob); ctx.lineTo(-8, -16 + legBob); ctx.lineTo(-4, -8 + legBob);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(4, -8 + legBob); ctx.lineTo(8, -16 + legBob); ctx.lineTo(10, -8 + legBob);
+      ctx.fill();
+
+      // 復古發光猩紅邪眼
+      if (c.hurt) {
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(2, -4 + legBob); ctx.lineTo(10, 0 + legBob);
+        ctx.moveTo(10, -4 + legBob); ctx.lineTo(2, 0 + legBob);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(2, -4 + legBob, 4, 4);
+        ctx.fillRect(8, -4 + legBob, 4, 4);
+
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(3.5, -3 + legBob, 1.5, 2.5);
+        ctx.fillRect(9.5, -3 + legBob, 1.5, 2.5);
+      }
+
+      // 暗金屬利爪四肢
+      ctx.fillStyle = '#262626';
+      const leg1Offset = isWalking ? Math.sin(c.walkTimer * 0.3) * 4 : 0;
+      const leg2Offset = isWalking ? -Math.sin(c.walkTimer * 0.3) * 4 : 0;
+      ctx.fillRect(-9, 12 + leg1Offset, 5, 4);
+      ctx.fillRect(4, 12 + leg2Offset, 5, 4);
+
+      ctx.restore();
+    }
+
+    function drawPlatform(p) {
+      if (p.isBroken) return;
+      ctx.save();
+
+      switch (p.type) {
+        case PLATFORM_TYPES.NORMAL:
+          ctx.fillStyle = '#1c1917';
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+          ctx.strokeStyle = '#44403c';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(p.x, p.y, p.width, p.height);
+
+          ctx.fillStyle = '#292524';
+          ctx.fillRect(p.x + 3, p.y + 2, p.width - 6, 3);
+
+          ctx.strokeStyle = '#0c0a09';
+          ctx.beginPath();
+          ctx.moveTo(p.x + p.width * 0.45, p.y);
+          ctx.lineTo(p.x + p.width * 0.45, p.y + p.height);
+          ctx.stroke();
+          break;
+
+        case PLATFORM_TYPES.SPRING:
+          ctx.fillStyle = '#064e3b';
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(p.x, p.y, p.width, p.height);
+
+          ctx.strokeStyle = '#6ee7b7';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          const sOffset = p.springOffset || 0;
+          ctx.moveTo(p.x + p.width / 2 - 14, p.y + 3);
+          ctx.lineTo(p.x + p.width / 2, p.y + 11 - sOffset);
+          ctx.lineTo(p.x + p.width / 2 + 14, p.y + 3);
+          ctx.stroke();
+          break;
+
+        case PLATFORM_TYPES.BELT_LEFT:
+        case PLATFORM_TYPES.BELT_RIGHT:
+          ctx.fillStyle = '#082f49';
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+          ctx.strokeStyle = '#0284c7';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(p.x, p.y, p.width, p.height);
+
+          const isLeft = p.type === PLATFORM_TYPES.BELT_LEFT;
+          p.beltOffset = (p.beltOffset || 0) + (isLeft ? -1.1 : 1.1);
+          if (p.beltOffset > 16) p.beltOffset = 0;
+          if (p.beltOffset < 0) p.beltOffset = 16;
+
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2;
+          for (let bx = p.x + (p.beltOffset % 16); bx < p.x + p.width - 6; bx += 16) {
+            ctx.beginPath();
+            if (isLeft) {
+              ctx.moveTo(bx + 5, p.y + 3);
+              ctx.lineTo(bx, p.y + 7);
+              ctx.lineTo(bx + 5, p.y + 11);
+            } else {
+              ctx.moveTo(bx, p.y + 3);
+              ctx.lineTo(bx + 5, p.y + 7);
+              ctx.lineTo(bx, p.y + 11);
+            }
+            ctx.stroke();
+          }
+          break;
+
+        case PLATFORM_TYPES.SPIKE:
+          ctx.fillStyle = '#450a0a';
+          ctx.fillRect(p.x, p.y + 5, p.width, p.height - 5);
+          ctx.strokeStyle = '#7f1d1d';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(p.x, p.y + 5, p.width, p.height - 5);
+
+          ctx.fillStyle = '#b91c1c';
+          const count = Math.floor(p.width / 12);
+          const w = p.width / count;
+          for (let i = 0; i < count; i++) {
+            ctx.beginPath();
+            ctx.moveTo(p.x + i * w, p.y + 5);
+            ctx.lineTo(p.x + (i + 0.5) * w, p.y - 5);
+            ctx.lineTo(p.x + (i + 1) * w, p.y + 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+          break;
+
+        case PLATFORM_TYPES.CRUMBLE:
+          ctx.fillStyle = p.stepped ? '#291e10' : '#451a03';
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+          ctx.strokeStyle = p.stepped ? '#b45309' : '#78350f';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(p.x, p.y, p.width, p.height);
+
+          if (p.stepped) {
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(p.x + p.width * 0.2, p.y + 2);
+            ctx.lineTo(p.x + p.width * 0.4, p.y + 12);
+            ctx.moveTo(p.x + p.width * 0.7, p.y + 2);
+            ctx.lineTo(p.x + p.width * 0.6, p.y + 10);
+            ctx.stroke();
+          }
+          break;
+
+        case PLATFORM_TYPES.FLIP:
+          const cosVal = Math.cos(p.flipAngle || 0);
+          const currentVisualH = Math.max(2, p.height * Math.abs(cosVal));
+          const centerY = p.y + p.height / 2;
+
+          ctx.fillStyle = '#6b21a8';
+          ctx.fillRect(p.x - 3, centerY - 3, 3, 6);
+          ctx.fillRect(p.x + p.width, centerY - 3, 3, 6);
+
+          ctx.fillStyle = cosVal >= 0 ? '#3b0764' : '#2e1065';
+          ctx.fillRect(p.x, centerY - currentVisualH / 2, p.width, currentVisualH);
+          ctx.strokeStyle = cosVal >= 0 ? '#a855f7' : '#c084fc';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(p.x, centerY - currentVisualH / 2, p.width, currentVisualH);
+
+          if (currentVisualH > 5) {
+            ctx.fillStyle = '#c084fc';
+            ctx.fillRect(p.x + p.width / 2 - 5, centerY - currentVisualH / 4, 10, currentVisualH / 2);
+            ctx.fillStyle = '#f3e8ff';
+            ctx.fillRect(p.x + p.width / 2 - 2, centerY - currentVisualH / 6, 4, currentVisualH / 3);
+          }
+          break;
+      }
+      ctx.restore();
+    }
+
+    let ashParticles = [];
+    for (let i = 0; i < 35; i++) {
+      ashParticles.push({
+        x: Math.random() * CANVAS_WIDTH,
+        y: Math.random() * CANVAS_HEIGHT,
+        size: Math.random() * 2 + 1,
+        speed: Math.random() * 0.9 + 0.3,
+        alpha: Math.random() * 0.6 + 0.2
+      });
+    }
+
+    function drawBackground() {
+      const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+      grad.addColorStop(0, '#050203');
+      grad.addColorStop(0.5, '#120407');
+      grad.addColorStop(1, '#050203');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      ashParticles.forEach(pt => {
+        pt.y -= pt.speed;
+        if (pt.y < 0) {
+          pt.y = CANVAS_HEIGHT;
+          pt.x = Math.random() * CANVAS_WIDTH;
+        }
+        ctx.fillStyle = `rgba(220, 38, 38, ${pt.alpha})`;
+        ctx.fillRect(pt.x, pt.y, pt.size, pt.size);
+      });
+    }
+
+    function updateGame() {
+      if (gameState !== 'PLAYING') return;
+
+      currentScrollSpeed = calculateScrollSpeed(depth);
+
+      let beltPush = 0;
+      if (cat.onGround && cat.currentPlatform) {
+        if (cat.currentPlatform.type === PLATFORM_TYPES.BELT_LEFT) {
+          beltPush = -2.3;
+        } else if (cat.currentPlatform.type === PLATFORM_TYPES.BELT_RIGHT) {
+          beltPush = 2.3;
+        }
+      }
+
+      let moveDir = 0;
+      if (keys.left) {
+        moveDir -= 1;
+        cat.facing = 'left';
+      }
+      if (keys.right) {
+        moveDir += 1;
+        cat.facing = 'right';
+      }
+
+      let playerSpeed = cat.speed;
+      if (beltPush !== 0 && moveDir !== 0) {
+        if ((beltPush > 0 && moveDir > 0) || (beltPush < 0 && moveDir < 0)) {
+          playerSpeed = cat.speed * 1.35;
+        } else {
+          playerSpeed = cat.speed * 0.85;
+        }
+      }
+
+      cat.vx = moveDir * playerSpeed + beltPush;
+      cat.x += cat.vx;
+
+      if (cat.x < 0) cat.x = 0;
+      if (cat.x + cat.width > CANVAS_WIDTH) cat.x = CANVAS_WIDTH - cat.width;
+
+      if (Math.abs(cat.vx) > 0.1) {
+        cat.walkTimer++;
+      } else {
+        cat.walkTimer = 0;
+      }
+
+      let deepestPlatformY = -Infinity;
+      for (let i = platforms.length - 1; i >= 0; i--) {
+        const p = platforms[i];
+        p.y -= currentScrollSpeed;
+
+        if (p.y > deepestPlatformY) {
+          deepestPlatformY = p.y;
+        }
+
+        if (p.springOffset > 0) {
+          p.springOffset -= 0.6;
+          if (p.springOffset < 0) p.springOffset = 0;
+        }
+
+        if (p.type === PLATFORM_TYPES.CRUMBLE && p.stepped) {
+          p.crumbleTimer++;
+          if (p.crumbleTimer > 23) {
+            p.isBroken = true;
+            if (cat.currentPlatform === p) {
+              cat.onGround = false;
+              cat.currentPlatform = null;
+            }
+          }
+        }
+
+        if (p.type === PLATFORM_TYPES.FLIP && p.isFlipping) {
+          p.flipAngle += 0.13;
+          if (Math.abs(Math.cos(p.flipAngle)) < 0.6) {
+            if (cat.currentPlatform === p) {
+              cat.onGround = false;
+              cat.currentPlatform = null;
+            }
+          }
+          if (p.flipAngle >= Math.PI) {
+            p.flipAngle = 0;
+            p.isFlipping = false;
+            p.stepped = false;
+          }
+        }
+
+        if (p.y < -30) {
+          if (cat.currentPlatform === p) {
+            cat.onGround = false;
+            cat.currentPlatform = null;
+          }
+          platforms.splice(i, 1);
+          depth++;
+          depthMeter.textContent = `B${depth}F`;
+
+          if (depth >= MAX_DEPTH) {
+            triggerVictory();
+            return;
+          }
+        }
+      }
+
+      if (deepestPlatformY < CANVAS_HEIGHT) {
+        const startY = deepestPlatformY > 0 ? deepestPlatformY : CANVAS_HEIGHT;
+        const gap = 75 + Math.random() * 25;
+        platforms.push(createPlatform(startY + gap));
+      }
+
+      if (cat.onGround && cat.currentPlatform) {
+        const p = cat.currentPlatform;
+        const margin = 6;
+        const isStillOnPlatformX = (cat.x + cat.width - margin > p.x) && (cat.x + margin < p.x + p.width);
+
+        if (isStillOnPlatformX && !p.isBroken) {
+          cat.y = p.y - cat.height;
+          cat.vy = 0;
+        } else {
+          cat.onGround = false;
+          cat.currentPlatform = null;
+          cat.vy = 0;
+        }
+      } else {
+        cat.vy += GRAVITY;
+        const prevY = cat.y;
+        cat.y += cat.vy;
+
+        if (cat.vy >= 0) {
+          const margin = 5;
+          const catBottom = cat.y + cat.height;
+          const prevBottom = prevY + cat.height;
+
+          for (const p of platforms) {
+            if (p.isBroken) continue;
+            if (p.y <= CAT_HEIGHT + 14) continue;
+            if (p.type === PLATFORM_TYPES.FLIP && p.isFlipping && Math.abs(Math.cos(p.flipAngle)) < 0.6) {
+              continue;
+            }
+
+            const overlapX = (cat.x + cat.width - margin > p.x) && (cat.x + margin < p.x + p.width);
+
+            if (overlapX && prevBottom <= p.y + 12 && catBottom >= p.y - 2) {
+              cat.y = p.y - cat.height;
+              cat.onGround = true;
+              cat.currentPlatform = p;
+
+              if (p.type !== PLATFORM_TYPES.SPIKE) {
+                if (!p.healed) {
+                  p.healed = true;
+                  healPlayer();
+                }
+              }
+
+              if (p.type === PLATFORM_TYPES.SPRING) {
+                p.springOffset = 7;
+                cat.vy = -8.2;
+                cat.onGround = false;
+                cat.currentPlatform = null;
+                sound.playSpring();
+              } else if (p.type === PLATFORM_TYPES.SPIKE) {
+                cat.vy = 0;
+                sound.playThud();
+                if (!p.stepped) {
+                  p.stepped = true;
+                  takeDamage(1, true);
+                }
+              } else if (p.type === PLATFORM_TYPES.CRUMBLE) {
+                cat.vy = 0;
+                sound.playThud();
+                if (!p.stepped) {
+                  p.stepped = true;
+                  sound.playBreak();
+                }
+              } else if (p.type === PLATFORM_TYPES.FLIP) {
+                cat.vy = 0;
+                sound.playThud();
+                if (!p.isFlipping) {
+                  p.isFlipping = true;
+                  p.stepped = true;
+                  sound.playFlip();
+                }
+              } else {
+                cat.vy = 0;
+                sound.playThud();
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      if (ceilingHurtCooldown > 0) {
+        ceilingHurtCooldown--;
+      }
+
+      if (cat.y <= 12) {
+        cat.y = 13;
+        cat.vy = 3.2;
+        cat.onGround = false;
+        cat.currentPlatform = null;
+        if (ceilingHurtCooldown === 0) {
+          ceilingHurtCooldown = 25;
+          takeDamage(1, false);
+        }
+      }
+
+      if (cat.y > CANVAS_HEIGHT + 20) {
+        triggerGameOver();
+        return;
+      }
+
+      if (invulnerableTimer > 0) {
+        invulnerableTimer--;
+        cat.hurt = true;
+      } else {
+        cat.hurt = false;
+      }
+
+      drawBackground();
+      platforms.forEach(drawPlatform);
+      drawCat(cat);
+
+      animFrameId = requestAnimationFrame(updateGame);
+    }
+
+    function takeDamage(dmg, forceDamage = false) {
+      if (!forceDamage && invulnerableTimer > 0) return;
+
+      hp -= dmg;
+      sound.playHurt();
+      invulnerableTimer = 28;
+      updateHeartsUI();
+
+      if (hp <= 0) {
+        triggerGameOver();
+      }
+    }
+
+    function triggerGameOver() {
+      gameState = 'GAMEOVER';
+      sound.playGameOver();
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+
+      gameoverSubtitle.textContent = "CONTRACT BROKEN";
+      gameoverSubtitle.className = "retro-font text-[10px] tracking-widest text-red-600 mb-1";
+      gameoverTitle.textContent = "SOUL EXTINCT";
+      gameoverTitle.className = "cinzel-font text-2xl font-black text-stone-100 mb-2 glow-blood";
+      endBadge.innerHTML = `
+        <svg viewBox="0 0 64 64" class="w-12 h-12 text-red-600">
+          <path d="M12,12 L52,52 M52,12 L12,52" stroke="currentColor" stroke-width="6" stroke-linecap="square"/>
+          <circle cx="32" cy="32" r="24" fill="none" stroke="#7f1d1d" stroke-width="3" stroke-dasharray="6,4"/>
+        </svg>
+      `;
+
+      finalDepth.textContent = `B${depth}F`;
+      finalDepth.className = "retro-font text-2xl font-bold text-red-500 mt-1";
+      const randomRemark = DARK_REMARKS[Math.floor(Math.random() * DARK_REMARKS.length)];
+      snarkyComment.textContent = randomRemark;
+
+      gameoverScreen.classList.remove('hidden');
+    }
+
+    function triggerVictory() {
+      gameState = 'VICTORY';
+      sound.playVictory();
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+
+      gameoverSubtitle.textContent = "CONQUEROR OF THE ABYSS";
+      gameoverSubtitle.className = "retro-font text-[10px] tracking-widest text-amber-400 mb-1";
+      gameoverTitle.textContent = "LORD OF THE ABYSS";
+      gameoverTitle.className = "cinzel-font text-2xl font-black text-amber-300 mb-2 glow-gold";
+      endBadge.innerHTML = `
+        <svg viewBox="0 0 64 64" class="w-12 h-12 text-amber-400 drop-shadow-[0_0_12px_rgba(245,158,11,0.9)]">
+          <polygon points="32,6 40,24 60,26 44,40 48,58 32,48 16,58 20,40 4,26 24,24" fill="#d97706" stroke="#fef08a" stroke-width="2"/>
+          <circle cx="32" cy="32" r="5" fill="#fef08a"/>
+        </svg>
+      `;
+
+      finalDepth.textContent = `B${MAX_DEPTH}F`;
+      finalDepth.className = "retro-font text-2xl font-bold text-amber-400 mt-1";
+      snarkyComment.textContent = "「深淵試煉已破，黑貓終登魔界至尊王座！」";
+
+      restartBtn.textContent = "RE-ENTER THE LEGEND";
+      gameoverScreen.classList.remove('hidden');
+    }
+
+    function startGame(e) {
+      if (e) e.stopPropagation();
+      sound.init();
+      gameState = 'PLAYING';
+      depth = 1;
+      hp = MAX_HP;
+      invulnerableTimer = 0;
+      ceilingHurtCooldown = 0;
+      depthMeter.textContent = `B1F`;
+      restartBtn.textContent = "RESURRECT";
+      updateHeartsUI();
+
+      startScreen.classList.add('hidden');
+      gameoverScreen.classList.add('hidden');
+
+      cat.reset();
+      initPlatforms();
+
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      animFrameId = requestAnimationFrame(updateGame);
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        keys.left = true;
+      } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        keys.right = true;
+      } else if (gameState !== 'PLAYING' && (e.code === 'Space' || e.code === 'Enter')) {
+        startGame();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        keys.left = false;
+      } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        keys.right = false;
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      keys.left = false;
+      keys.right = false;
+    });
+
+    function bindTouchButton(element, direction) {
+      const startAction = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        sound.init();
+        keys[direction] = true;
+      };
+      const endAction = (e) => {
+        e.preventDefault();
+        keys[direction] = false;
+      };
+      element.addEventListener('touchstart', startAction, { passive: false });
+      element.addEventListener('touchend', endAction, { passive: false });
+      element.addEventListener('touchcancel', endAction, { passive: false });
+      element.addEventListener('mousedown', startAction);
+      element.addEventListener('mouseup', endAction);
+      element.addEventListener('mouseleave', endAction);
+    }
+
+    bindTouchButton(touchLeft, 'left');
+    bindTouchButton(touchRight, 'right');
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+    startScreen.addEventListener('click', startGame);
+
+    soundToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sound.init();
+      sound.enabled = !sound.enabled;
+      soundToggle.textContent = sound.enabled ? 'SFX: ON' : 'SFX: OFF';
+      soundToggle.classList.toggle('text-red-500', !sound.enabled);
+    });
+
+    updateHeartsUI();
+
+    const gameScaler = document.getElementById('game-scaler');
+    const zoomInBtn = document.getElementById('zoom-in-btn');
+    const zoomOutBtn = document.getElementById('zoom-out-btn');
+    const zoomResetBtn = document.getElementById('zoom-reset-btn');
+    const zoomLevelText = document.getElementById('zoom-level-text');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+    const ZOOM_STEP = 0.1;
+    const MIN_ZOOM = 0.75;
+    const MAX_ZOOM = 1.75;
+    let currentZoom = 1.0;
+
+    // 嘗試讀取本地儲存的喜好比例
+    try {
+      const savedZoom = localStorage.getItem('abyss_cat_zoom');
+      if (savedZoom) {
+        const parsed = parseFloat(savedZoom);
+        if (!isNaN(parsed) && parsed >= MIN_ZOOM && parsed <= MAX_ZOOM) {
+          currentZoom = parsed;
+        }
+      }
+    } catch (e) {}
+
+    function applyZoom(zoom) {
+      currentZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, parseFloat(zoom.toFixed(2))));
+      gameScaler.style.transform = `scale(${currentZoom})`;
+      zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
+      try {
+        localStorage.setItem('abyss_cat_zoom', currentZoom.toString());
+      } catch (e) {}
+    }
+
+    if (zoomInBtn) {
+      zoomInBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyZoom(currentZoom + ZOOM_STEP);
+      });
+    }
+
+    if (zoomOutBtn) {
+      zoomOutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyZoom(currentZoom - ZOOM_STEP);
+      });
+    }
+
+    if (zoomResetBtn) {
+      zoomResetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyZoom(1.0);
+      });
+    }
+
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+    }
+
+    // 鍵盤縮放快捷鍵監聽 (+, -, 0)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '+' || e.key === '=') {
+        applyZoom(currentZoom + ZOOM_STEP);
+      } else if (e.key === '-' || e.key === '_') {
+        applyZoom(currentZoom - ZOOM_STEP);
+      } else if (e.key === '0') {
+        applyZoom(1.0);
+      }
+    });
+
+    // 初始套用縮放比例
+    applyZoom(currentZoom);
+  </script>
+</body>
+</html>
