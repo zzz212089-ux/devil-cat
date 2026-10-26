@@ -1,6 +1,38 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+<!-- HAPPYCAT_SANDBOX_STORAGE_V1: Game scores only, not auth or private data. -->
+<script>
+(function () {
+  'use strict';
+  const kind = 'local';
+  const key = kind + 'Storage';
+  let seeded = {};
+  try {
+    const blob = new URLSearchParams(location.hash.slice(1)).get('happycat_scores');
+    if (blob && blob.length < 4096) {
+      const parsed = JSON.parse(atob(blob));
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) seeded = parsed;
+    }
+  } catch (error) { /* Normal play works even without score restore. */ }
+  window.happycatSandboxStorage = {
+    getItem(name) {
+      const k = String(name);
+      try { return window[key].getItem(k); }
+      catch (error) { return Object.prototype.hasOwnProperty.call(seeded, k) ? String(seeded[k]) : null; }
+    },
+    setItem(name, value) {
+      const k = String(name), v = String(value);
+      try { window[key].setItem(k, v); }
+      catch (error) {
+        seeded[k] = v;
+        if (window.parent !== window) window.parent.postMessage({ type: 'happycat-score-v1', key: k, value: v }, '*');
+      }
+    }
+  };
+})();
+</script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>深淵試煉</title>
@@ -1313,7 +1345,7 @@
 
     // 嘗試讀取本地儲存的喜好比例
     try {
-      const savedZoom = localStorage.getItem('abyss_cat_zoom');
+      const savedZoom = window.happycatSandboxStorage.getItem('abyss_cat_zoom');
       if (savedZoom) {
         const parsed = parseFloat(savedZoom);
         if (!isNaN(parsed) && parsed >= MIN_ZOOM && parsed <= MAX_ZOOM) {
@@ -1327,7 +1359,7 @@
       gameScaler.style.transform = `scale(${currentZoom})`;
       zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
       try {
-        localStorage.setItem('abyss_cat_zoom', currentZoom.toString());
+        window.happycatSandboxStorage.setItem('abyss_cat_zoom', currentZoom.toString());
       } catch (e) {}
     }
 
